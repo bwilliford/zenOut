@@ -7,6 +7,7 @@ const EXHALE_MS = 8000;   // 8s
 const CYCLE_MS = INHALE_MS + EXHALE_MS; // 12s
 const AMBIENCE_URL = new URL('./assets/birds.mp3', import.meta.url).toString();
 const OM_URL = new URL('./assets/om.mp3', import.meta.url).toString();
+const CHIME_URL = new URL('./assets/chime.mp3', import.meta.url).toString();
 
 type PhaseKey = "p1" | "p2" | "p3" | "p4" | "p5";
 type Phase = { key: PhaseKey; name: string; description: string; illo?: "eyes" | "ears" | "neck" };
@@ -20,8 +21,8 @@ const PHASES: Phase[] = [
 ];
 
 /* ---------- BreathPrompt Component ---------- */
-function BreathPrompt({ currentPhase }: { currentPhase: Phase }) {
-  const [cycleTime, setCycleTime] = useState(() => Date.now());
+function BreathPrompt({ currentPhase, started }: { currentPhase: Phase; started: boolean }) {
+  const [cycleTime, setCycleTime] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -29,34 +30,90 @@ function BreathPrompt({ currentPhase }: { currentPhase: Phase }) {
     return () => clearInterval(interval);
   }, []);
 
-  // Calculate elapsed time in seconds
+  // Start the breathing cycle 4 seconds after the phase begins (same as om timing)
+  useEffect(() => {
+    if (!started) {
+      setCycleTime(null);
+      return;
+    }
+
+    if (currentPhase.key === "p1") {
+      // For phase 1, start immediately (no om sound)
+      setCycleTime(Date.now());
+      return;
+    }
+
+    // For phases 2-5, start the cycle 4 seconds after phase begins (when exhale starts)
+    const startCycle = setTimeout(() => {
+      setCycleTime(Date.now());
+    }, 0);
+
+    return () => {
+      clearTimeout(startCycle);
+      setCycleTime(null);
+    };
+  }, [started, currentPhase.key]);
+
+  // If no cycle time is set (p1 or not started), show default text
+  if (!cycleTime) {
+    return (
+      <span
+        style={{
+          fontSize: 24,
+          fontWeight: 400,
+          color: "white",
+          opacity: 1,
+          transition: "opacity 0.8s linear",
+          letterSpacing: 0.5,
+          position: "absolute",
+          top: "calc(50% - 12px)",
+          width: "100%",
+          left: "0%",
+          textAlign: "center",
+        }}
+        aria-live="polite"
+      >
+        breathe in...
+      </span>
+    );
+  }
+
+  // Calculate elapsed time in seconds from cycle start
   const elapsedSeconds = ((now - cycleTime) / 1000) % 12; // 12 second cycle
   const isIn = elapsedSeconds < 4; // First 4 seconds is inhale
-  const text = isIn ? "breathe in" : "breathe out";
+  const text = isIn ? "breathe in..." : "breathe out...";
 
   // Simple fade out at the end of each phase
-  let opacity = 0.6;
-  if (isIn && elapsedSeconds > 3.3) {
-    opacity = 0.6 * (1 - (elapsedSeconds - 3.3) / 0.7);
-  } else if (!isIn && elapsedSeconds > 11.3) {
-    opacity = 0.6 * (1 - (elapsedSeconds - 11.3) / 0.7);
+  // Improved fade: fade out over the last 1s of each inhale/exhale
+  let opacity = 1;
+  if (isIn) {
+    // Fade out during last 1s of inhale (from 3s to 4s)
+    if (elapsedSeconds > 3) {
+      opacity = 1 * (1 - (elapsedSeconds - 3) / 1);
+    }
+  } else {
+    // Fade out during last 1s of exhale (from 11s to 12s)
+    if (elapsedSeconds > 11) {
+      opacity = 1 * (1 - (elapsedSeconds - 11) / 1);
+    }
   }
   opacity = Math.max(0, Math.min(0.6, opacity));
-
-  // Reset cycleTime every cycle to avoid drift
-  useEffect(() => {
-    if (elapsedSeconds < 0.1) setCycleTime(Date.now());
-  }, [elapsedSeconds]);
 
   return (
     <span
       style={{
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: 400,
         color: "white",
-        opacity,
-        transition: "opacity 0.4s linear",
+        opacity: 1,
+        transition: "opacity 0.8s linear",
         letterSpacing: 0.5,
+        position: "absolute",
+        top: "calc(50% - 12px)",
+        width: "100%",
+        left: "0%",
+        textAlign: "center",
+        zIndex: 999
       }}
       aria-live="polite"
     >
@@ -74,6 +131,7 @@ export default function App() {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const omAudioRef = useRef<HTMLAudioElement | null>(null);
+  const chimeAudioRef = useRef<HTMLAudioElement | null>(null);
   const phaseIndexRef = useRef(phaseIndex);
   const isTransitioningRef = useRef(false);
   const current = PHASES[phaseIndex];
@@ -84,6 +142,24 @@ export default function App() {
     phaseIndexRef.current = phaseIndex;
     isTransitioningRef.current = false;
   }, [phaseIndex]);
+
+  // Play chime when phase changes
+  useEffect(() => {
+    if (!started) return;
+
+    // Play chime sound when phase begins
+    if (!chimeAudioRef.current) {
+      chimeAudioRef.current = new Audio(CHIME_URL);
+      chimeAudioRef.current.volume = 0.1;
+    }
+
+    const audio = chimeAudioRef.current;
+    audio.currentTime = 0;
+    audio.volume = 0.1;
+    audio.play().catch(() => {
+      // Ignore autoplay errors
+    });
+  }, [phaseIndex, started]);
 
   // OM sound effect for all phases after the first
   useEffect(() => {
@@ -312,7 +388,7 @@ export default function App() {
             <h1 className="title">
               <span style={{ fontWeight: 500 }}>Zen</span>Out
             </h1>
-            <p className="subtitle">A science-backed meditation to stimulate the vagus nerve and help you relax.</p>
+            <p className="subtitle">A science-backed guided meditation to stimulate the vagus nerve and help you relax.</p>
 
             <div className="options">
               <button className="option" onClick={() => startWithMinutes(5)}>5 Minutes</button>
@@ -390,34 +466,35 @@ export default function App() {
           </div>
 
           {/* progress */}
-          <div style={{ maxWidth: 960, width: "70%", margin: "0 auto" }}>
+          <div style={{ maxWidth: 960, width: "65%", margin: "0 auto" }}>
             <div className="bar">
               <div className="barFill" style={{ width: `${progress}%` }} />
             </div>
-            <div style={{ marginTop: 30, display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+
+            <div>
               <div>
                 <div className="smallCaps">Phase {phaseIndex + 1} of {PHASES.length}</div>
                 <div className="phaseTitle">{current.name}</div>
                 <div className="phaseDesc">{current.description}</div>
               </div>
-              <div className="timer">{timeStr}</div>
+              {/* <div className="timer">{timeStr}</div> */}
             </div>
-          </div>
+          </div> 
+
+            
 
           {/* breathing circle */}
           <div style={{ flex: 1, display: "grid", placeItems: "center" }}>
             <div style={{ position: "relative" }}>
-              <div className="breathCircle" style={{ animation: `breath ${CYCLE_MS}ms infinite` }} />
+              <div className="breathCircle" style={{ animation: `breath ${CYCLE_MS}ms infinite` }}>
+              </div>
               <div className="circleGlow" />
+              <div className="phaseDesc"><BreathPrompt currentPhase={current} started={started} /></div>
+
             </div>
           </div>
+          
 
-          {/*
-            Breathing prompt: "breathe in..." for 4s, fade out, then "breathe out..." for 8s, repeat every 12s.
-          */}
-          <div style={{ minHeight: 40, display: "flex", justifyContent: "center", alignItems: "center", marginTop: 0 }}>
-            <BreathPrompt currentPhase={current} />
-          </div>
 
           {/* illustrations */}
           <div style={{ minHeight: 80, display: "grid", placeItems: "center" }}>
