@@ -1,0 +1,506 @@
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import "./App.css";
+
+/* ---------- Config ---------- */
+const INHALE_MS = 4000;   // 4s
+const EXHALE_MS = 8000;   // 8s
+const CYCLE_MS = INHALE_MS + EXHALE_MS; // 12s
+const AMBIENCE_URL = new URL('./assets/birds.mp3', import.meta.url).toString();
+const OM_URL = new URL('./assets/om.mp3', import.meta.url).toString();
+
+type PhaseKey = "p1" | "p2" | "p3" | "p4" | "p5";
+type Phase = { key: PhaseKey; name: string; description: string; illo?: "eyes" | "ears" | "neck" };
+
+const PHASES: Phase[] = [
+  { key: "p1", name: "Resonant Breathing", description: "Inhale 4s · Exhale 8s. Follow the circle." },
+  { key: "p2", name: "Oms (Humming Exhales)", description: "Now hum or 'om' during each exhale. Feel the vibration in your chest and neck." },
+  { key: "p3", name: "Gently Rub Eyes", description: "With fingertips, trace slow circles on eyelids/brow.", illo: "eyes" },
+  { key: "p4", name: "Rub Ears", description: "Gently rub and lightly stretch the outer ears.", illo: "ears" },
+  { key: "p5", name: "Rub Neck", description: "Massage along the side of the neck below the ears.", illo: "neck" },
+];
+
+/* ---------- BreathPrompt Component ---------- */
+function BreathPrompt({ currentPhase }: { currentPhase: Phase }) {
+  const [cycleTime, setCycleTime] = useState(() => Date.now());
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 100);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Calculate elapsed time in seconds
+  const elapsedSeconds = ((now - cycleTime) / 1000) % 12; // 12 second cycle
+  const isIn = elapsedSeconds < 4; // First 4 seconds is inhale
+  const text = isIn ? "breathe in" : "breathe out";
+
+  // Simple fade out at the end of each phase
+  let opacity = 0.6;
+  if (isIn && elapsedSeconds > 3.3) {
+    opacity = 0.6 * (1 - (elapsedSeconds - 3.3) / 0.7);
+  } else if (!isIn && elapsedSeconds > 11.3) {
+    opacity = 0.6 * (1 - (elapsedSeconds - 11.3) / 0.7);
+  }
+  opacity = Math.max(0, Math.min(0.6, opacity));
+
+  // Reset cycleTime every cycle to avoid drift
+  useEffect(() => {
+    if (elapsedSeconds < 0.1) setCycleTime(Date.now());
+  }, [elapsedSeconds]);
+
+  return (
+    <span
+      style={{
+        fontSize: 24,
+        fontWeight: 400,
+        color: "white",
+        opacity,
+        transition: "opacity 0.4s linear",
+        letterSpacing: 0.5,
+      }}
+      aria-live="polite"
+    >
+      {text}
+    </span>
+  );
+}
+
+export default function App() {
+  const [started, setStarted] = useState(false);
+  const [phaseIndex, setPhaseIndex] = useState(0);
+  const [phaseDurationMs, setPhaseDurationMs] = useState(60000); // default 60s per phase
+  const [remaining, setRemaining] = useState(60000);
+  const [ambienceOn, setAmbienceOn] = useState(true);
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const omAudioRef = useRef<HTMLAudioElement | null>(null);
+  const phaseIndexRef = useRef(phaseIndex);
+  const isTransitioningRef = useRef(false);
+  const current = PHASES[phaseIndex];
+  const isComplete = started && phaseIndex === PHASES.length - 1 && remaining === 0;
+
+  // Update ref when phaseIndex changes
+  useEffect(() => {
+    phaseIndexRef.current = phaseIndex;
+    isTransitioningRef.current = false;
+  }, [phaseIndex]);
+
+  // OM sound effect for all phases after the first
+  useEffect(() => {
+    if (!started || current.key === "p1") return;
+
+    let cycleStartTime = Date.now();
+    let omInterval: number;
+
+    const playOmForExhale = () => {
+      // Play OM sound during the exhale phase (seconds 4-12 of each 12-second cycle)
+      const playOm = () => {
+        if (!omAudioRef.current) {
+          omAudioRef.current = new Audio(OM_URL);
+          omAudioRef.current.volume = 0.2;
+        }
+
+        const audio = omAudioRef.current;
+        audio.currentTime = 0;
+        audio.volume = 0.2;
+
+        // Play the audio
+        audio.play().catch(() => {
+          // Ignore autoplay errors
+        });
+
+        // Fade out after 7 seconds (before the 8-second exhale ends)
+        const fadeDuration = 1000; // 1 second fade
+        const fadeStart = 7000; // start fade at 7 seconds
+
+        // Clear any previous fade timers
+        if ((audio as any)._fadeTimeout) {
+          clearTimeout((audio as any)._fadeTimeout);
+        }
+        if ((audio as any)._fadeInterval) {
+          clearInterval((audio as any)._fadeInterval);
+        }
+
+        (audio as any)._fadeTimeout = setTimeout(() => {
+          const fadeSteps = 20;
+          let step = 0;
+          const initialVolume = 0.2;
+          (audio as any)._fadeInterval = setInterval(() => {
+            step++;
+            audio.volume = Math.max(0, initialVolume * (1 - step / fadeSteps));
+            if (step >= fadeSteps) {
+              clearInterval((audio as any)._fadeInterval);
+              audio.volume = 0;
+              audio.pause();
+              audio.currentTime = 0;
+            }
+          }, fadeDuration / fadeSteps);
+        }, fadeStart);
+      };
+
+      // Play OM immediately for the current exhale phase
+      playOm();
+
+      // Set up interval to play OM every 12 seconds (full breathing cycle)
+      omInterval = setInterval(playOm, 12000);
+    };
+
+    // Start the OM cycle after 4 seconds (when exhale begins)
+    const startOmCycle = setTimeout(playOmForExhale, 4000);
+
+    return () => {
+      clearTimeout(startOmCycle);
+      clearInterval(omInterval);
+      if (omAudioRef.current) {
+        omAudioRef.current.pause();
+        omAudioRef.current.currentTime = 0;
+      }
+    };
+  }, [started, current.key]);
+
+  // Start a session with chosen minutes → per-phase duration
+  const startWithMinutes = async (minutes: 5 | 10 | 15) => {
+    const perPhase =
+      minutes === 5 ? 60_000 :
+        minutes === 10 ? 120_000 :
+          180_000; // 15 min
+
+    setPhaseDurationMs(perPhase);
+    setPhaseIndex(0);
+    setRemaining(perPhase);
+    setStarted(true);
+    // Make the browser go fullscreen when session starts
+    if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+
+    // Prime / autoplay ambience on user gesture
+    try {
+      if (!audioRef.current) {
+        audioRef.current = new Audio(AMBIENCE_URL);
+        audioRef.current.loop = true;
+      }
+      audioRef.current.muted = !ambienceOn;
+      // Attempt autoplay after this click
+      await audioRef.current.play();
+    } catch {
+      // If blocked, the mute toggle or any interaction will resume playback
+    }
+  };
+
+  // Phase timer - stable version
+  useEffect(() => {
+    if (!started) return;
+    
+    console.log(`Timer started for phase ${phaseIndex + 1}, duration: ${phaseDurationMs}ms`);
+    
+    const id = setInterval(() => {
+      setRemaining((prev) => {
+        const currentPhase = phaseIndexRef.current;
+        console.log(`Timer tick: remaining=${prev}, phaseIndex=${currentPhase}, phaseName=${PHASES[currentPhase].name}, isTransitioning=${isTransitioningRef.current}`);
+        
+        if (prev <= 1000 && !isTransitioningRef.current) {
+          if (currentPhase < PHASES.length - 1) {
+            const nextPhase = currentPhase + 1;
+            console.log(`Phase ${currentPhase + 1} (${PHASES[currentPhase].name}) ending, moving to phase ${nextPhase + 1} (${PHASES[nextPhase].name})`);
+            isTransitioningRef.current = true;
+            setPhaseIndex(p => p + 1);
+          }
+          return Math.max(0, prev - 1000);
+        }
+        return prev - 1000;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [started, phaseDurationMs]); // Removed phaseIndex from dependencies
+
+  // Reset remaining time when phase changes
+  useEffect(() => {
+    if (started) {
+      console.log(`Phase changed to ${phaseIndex + 1}: ${PHASES[phaseIndex].name}, resetting timer to ${phaseDurationMs}ms`);
+      setRemaining(phaseDurationMs);
+    }
+  }, [phaseIndex, started, phaseDurationMs]);
+
+  // Remove the duplicate logging effect that was causing double execution
+
+  // Ambience mute/unmute
+  useEffect(() => {
+    if (!audioRef.current) return;
+    audioRef.current.muted = !ambienceOn;
+    if (ambienceOn) {
+      audioRef.current.play().catch(() => { });
+    }
+  }, [ambienceOn]);
+
+  // Progress across all phases
+  const progress = useMemo(() => {
+    const per = 100 / PHASES.length;
+    const within = 1 - remaining / phaseDurationMs;
+    return Math.min(100, phaseIndex * per + within * per);
+  }, [phaseIndex, remaining, phaseDurationMs]);
+
+  const min = Math.floor((remaining / 1000) / 60);
+  const sec = Math.floor((remaining / 1000) % 60);
+  const timeStr = `${min}:${sec.toString().padStart(2, "0")}`;
+
+  return (
+    <div
+      style={{
+        height: "100vh",
+        width: "100vw",
+        color: "white",
+        position: "relative",
+        overflow: "hidden",
+        backgroundImage:
+          "linear-gradient(rgba(0,0,0,.40), rgba(0,0,0,.40)), url('https://plus.unsplash.com/premium_photo-1661954483883-edd65eac3577?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
+
+<div style={{ position: "absolute", top: 16, right: 16, zIndex: 2, display: "flex", gap: 8 }}>
+            <button
+              className="pill"
+              onClick={() => {
+                if (!document.fullscreenElement) {
+                  document.documentElement.requestFullscreen?.();
+                } else {
+                  document.exitFullscreen?.();
+                }
+              }}
+              style={{ display: "flex", alignItems: "center", gap: 8 }}
+              aria-label="Toggle Fullscreen"
+            >
+              {/* Fullscreen Icon */}
+              {document.fullscreenElement ? (
+                // Exit Fullscreen (contract)
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: 4 }} xmlns="http://www.w3.org/2000/svg">
+                  {/* Top-left arrow pointing inwards (rotated 180deg, now bottom-right) */}
+                  {/* Top-left arrow pointing inwards (rotated 180deg, now bottom-right) */}
+                  <g>
+                    <g transform="rotate(180 6.5 6.5)">
+                      <path d="M4 7V4H7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <polyline points="4,4 9,9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                    </g>
+                    {/* Bottom-right arrow pointing inwards (rotated 180deg, now top-left) */}
+                    <g transform="rotate(180 14.5 14.5)">
+                      <path d="M16 13V16H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <polyline points="16,16 11,11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                    </g>
+                  </g>
+                </svg>
+              ) : (
+                // Enter Fullscreen (expand)
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: 0 }} xmlns="http://www.w3.org/2000/svg">
+                  {/* Top-left arrow */}
+                  <path d="M8 8L4 4M4 4H8M4 4V8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  {/* Bottom-right arrow */}
+                  <path d="M12 12L16 16M16 16H12M16 16V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </button>
+            
+          </div>
+
+
+
+      {/* Start screen with 3 options */}
+      {!started && (
+        <div style={{ height: "100vh", display: "grid", placeItems: "center", textAlign: "center", padding: 24, overflow: "hidden" }}>
+          <div>
+            <h1 className="title">
+              <span style={{ fontWeight: 500 }}>Zen</span>Out
+            </h1>
+            <p className="subtitle">A science-backed meditation to stimulate the vagus nerve and help you relax.</p>
+
+            <div className="options">
+              <button className="option" onClick={() => startWithMinutes(5)}>5 Minutes</button>
+              <button className="option" onClick={() => startWithMinutes(10)}>10 Minutes</button>
+              <button className="option" onClick={() => startWithMinutes(15)}>15 Minutes</button>
+            </div>
+
+          </div>
+
+        <div className="created">
+          Created with
+          <span style={{ fontFamily: "monospace", margin: "0 4px" }} aria-label="heart" role="img">&#9829;</span>by <a href="https://www.blakewilliford.com" target="_blank" style={{ fontWeight: "bold", color: "white", pointerEvents: "auto" }}>Blake Williford</a>
+        </div>
+
+        <div className="coffee">
+          Enjoying? Buy me a{" "}
+          <a
+            href="https://ko-fi.com/blakewilliford"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontWeight: "bold", color: "white" }}
+          >
+            coffee
+          </a>
+        </div>
+        </div>
+      )}
+
+      {/* Session in progress */}
+      {started && !isComplete && (
+
+        <div style={{ height: "100vh", display: "flex", flexDirection: "column", padding: "30px 16px 24px", gap: 24 }}>
+
+          {/* Top-right controls */}
+          <div style={{ position: "absolute", bottom: 16, right: 16, zIndex: 2, display: "flex", gap: 8 }}>
+            <button className="pill" onClick={() => setAmbienceOn(v => !v)} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ display: "flex", alignItems: "center" }}>
+                {ambienceOn ? (
+                  // Mute icon (crossed speaker)
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: 4 }} xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 7V13H7L12 18V2L7 7H3Z" fill="currentColor" fillOpacity="0.7" />
+                    <line x1="15" y1="7" x2="19" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    <line x1="19" y1="7" x2="15" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                ) : (
+                  // Unmute icon (speaker)
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: 4 }} xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 7V13H7L12 18V2L7 7H3Z" fill="currentColor" fillOpacity="0.7" />
+                    <path d="M15 10C15 8.34315 13.6569 7 12 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    <path d="M15 10C15 11.6569 13.6569 13 12 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                )}
+              </span>
+              {ambienceOn ? "" : ""}
+            </button>
+          </div>
+
+          <div style={{ position: "absolute", top: 16, left: 16, zIndex: 2 }}>
+            <button
+              className="pill"
+              onClick={() => {
+                setStarted(false);
+                setPhaseIndex(0);
+                setRemaining(60_000);
+                try { audioRef.current?.pause(); audioRef.current!.currentTime = 0; } catch { }
+              }}
+              style={{ display: "flex", alignItems: "center", gap: 8 }}
+              aria-label="Back"
+            >
+              {/* Chevron Left Icon */}
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ marginRight: 4 }} xmlns="http://www.w3.org/2000/svg">
+                <path d="M13 16L7 10L13 4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
+
+          {/* progress */}
+          <div style={{ maxWidth: 960, width: "70%", margin: "0 auto" }}>
+            <div className="bar">
+              <div className="barFill" style={{ width: `${progress}%` }} />
+            </div>
+            <div style={{ marginTop: 30, display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+              <div>
+                <div className="smallCaps">Phase {phaseIndex + 1} of {PHASES.length}</div>
+                <div className="phaseTitle">{current.name}</div>
+                <div className="phaseDesc">{current.description}</div>
+              </div>
+              <div className="timer">{timeStr}</div>
+            </div>
+          </div>
+
+          {/* breathing circle */}
+          <div style={{ flex: 1, display: "grid", placeItems: "center" }}>
+            <div style={{ position: "relative" }}>
+              <div className="breathCircle" style={{ animation: `breath ${CYCLE_MS}ms infinite` }} />
+              <div className="circleGlow" />
+            </div>
+          </div>
+
+          {/*
+            Breathing prompt: "breathe in..." for 4s, fade out, then "breathe out..." for 8s, repeat every 12s.
+          */}
+          <div style={{ minHeight: 40, display: "flex", justifyContent: "center", alignItems: "center", marginTop: 0 }}>
+            <BreathPrompt currentPhase={current} />
+          </div>
+
+          {/* illustrations */}
+          <div style={{ minHeight: 80, display: "grid", placeItems: "center" }}>
+            {current.illo === "eyes" && <EyeRubSVG />}
+            {current.illo === "ears" && <EarRubSVG />}
+            {current.illo === "neck" && <NeckRubSVG />}
+          </div>
+
+          {/* Animated rain droplets background */}
+          <div className="rain-bg" aria-hidden="true">
+            {Array.from({ length: 64 }).map((_, i) => {
+              // Randomize left, delay, duration, size, and opacity for each droplet
+              const left = Math.random() * 100;
+              const delay = Math.random() * 3;
+              const duration = 1.8 + Math.random() * 1.8;
+              const size = 4 + Math.random() * 10;
+              const opacity = 0.3 + Math.random() * 0.5;
+              return (
+                <div
+                  key={i}
+                  className="rain-drop"
+                  style={{
+                    left: `${left}%`,
+                    animationDelay: `${delay}s`,
+                    animationDuration: `${duration}s`,
+                    width: `${size}px`,
+                    height: `${size * 2.2}px`,
+                    opacity,
+                  }}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+
+      {/* completion */}
+      {isComplete && (
+        <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", textAlign: "center", padding: 24 }}>
+          <div>
+            <h2 className="title">How do you feel?</h2>
+            <p className="subtitle" style={{ maxWidth: 640, margin: "12px auto 0" }}>
+              Notice your breath, your heartbeat, and the ease across your face, ears, and neck.
+            </p>
+            <button
+              className="cta"
+              onClick={() => {
+                setStarted(false);
+                setPhaseIndex(0);
+                setRemaining(60_000);
+                try { audioRef.current?.pause(); audioRef.current!.currentTime = 0; } catch { }
+              }}
+            >
+              Return to Start
+            </button>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+/* ---------- Minimal SVGs ---------- */
+function EyeRubSVG() {
+  return (
+    <svg width="88" height="56" viewBox="0 0 88 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+    </svg>
+  );
+}
+function EarRubSVG() {
+  return (
+    <svg width="88" height="56" viewBox="0 0 88 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+ 
+    </svg>
+  );
+}
+function NeckRubSVG() {
+  return (
+    <svg width="88" height="56" viewBox="0 0 88 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+    </svg>
+  );
+}
