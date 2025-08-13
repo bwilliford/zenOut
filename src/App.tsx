@@ -8,6 +8,7 @@ const CYCLE_MS = INHALE_MS + EXHALE_MS; // 12s
 const AMBIENCE_URL = new URL('./assets/birds.mp3', import.meta.url).toString();
 const OM_URL = new URL('./assets/om.mp3', import.meta.url).toString();
 const CHIME_URL = new URL('./assets/chime.mp3', import.meta.url).toString();
+const BG_URL = new URL('./assets/bg.jpg', import.meta.url).toString();
 
 type PhaseKey = "p1" | "p2" | "p3" | "p4" | "p5";
 type Phase = { key: PhaseKey; name: string; description: string; illo?: "eyes" | "ears" | "neck" };
@@ -15,9 +16,9 @@ type Phase = { key: PhaseKey; name: string; description: string; illo?: "eyes" |
 const PHASES: Phase[] = [
   { key: "p1", name: "Resonant Breathing", description: "Inhale 4s · Exhale 8s. Follow the circle." },
   { key: "p2", name: "Oms (Humming Exhales)", description: "Now hum or 'om' during each exhale. Feel the vibration in your chest and neck." },
-  { key: "p3", name: "Gently Rub Eyes", description: "With fingertips, trace slow circles on eyelids/brow.", illo: "eyes" },
-  { key: "p4", name: "Rub Ears", description: "Gently rub and lightly stretch the outer ears.", illo: "ears" },
-  { key: "p5", name: "Rub Neck", description: "Massage along the side of the neck below the ears.", illo: "neck" },
+  { key: "p3", name: "Gently Rub Eyes", description: "Close your eyes and gently massage them with your fingertips.", illo: "eyes" },
+  { key: "p4", name: "Rub Ears", description: "Gently rub and stretch the outer ears.", illo: "ears" },
+  { key: "p5", name: "Rub Neck", description: "Gently massage along the side of the neck below the ears.", illo: "neck" },
 ];
 
 /* ---------- BreathPrompt Component ---------- */
@@ -137,11 +138,45 @@ export default function App() {
   const current = PHASES[phaseIndex];
   const isComplete = started && phaseIndex === PHASES.length - 1 && remaining === 0;
 
+  // Stop all audio when session completes
+  useEffect(() => {
+    if (isComplete) {
+      // Stop ambience audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+      // Stop OM audio
+      if (omAudioRef.current) {
+        omAudioRef.current.pause();
+        omAudioRef.current.currentTime = 0;
+      }
+      // Stop chime audio
+      if (chimeAudioRef.current) {
+        chimeAudioRef.current.pause();
+        chimeAudioRef.current.currentTime = 0;
+      }
+    }
+  }, [isComplete]);
+
+  // Ensure ambience continues playing during the session
+  useEffect(() => {
+    if (started && !isComplete && audioRef.current) {
+      // Make sure ambience is playing and not muted
+      if (ambienceOn && audioRef.current.paused) {
+        audioRef.current.play().catch(() => {
+          // Ignore autoplay errors
+        });
+      }
+    }
+  }, [started, isComplete, ambienceOn]);
+
   // Update ref when phaseIndex changes
   useEffect(() => {
     phaseIndexRef.current = phaseIndex;
     isTransitioningRef.current = false;
   }, [phaseIndex]);
+
 
   // Play chime when phase changes
   useEffect(() => {
@@ -164,6 +199,7 @@ export default function App() {
   // OM sound effect for all phases after the first
   useEffect(() => {
     if (!started || current.key === "p1") return;
+    if (isComplete) return;
 
     let cycleStartTime = Date.now();
     let omInterval: number;
@@ -235,11 +271,11 @@ export default function App() {
   }, [started, current.key]);
 
   // Start a session with chosen minutes → per-phase duration
-  const startWithMinutes = async (minutes: 5 | 10 | 15) => {
+  const startWithMinutes = async (minutes: 3 | 5 | 10) => {
     const perPhase =
-      minutes === 5 ? 60_000 :
-        minutes === 10 ? 120_000 :
-          180_000; // 15 min
+      minutes === 3 ? 12_000 :
+        minutes === 5 ? 60_000 :
+          120_000; // 10 min
 
     setPhaseDurationMs(perPhase);
     setPhaseIndex(0);
@@ -304,10 +340,10 @@ export default function App() {
   useEffect(() => {
     if (!audioRef.current) return;
     audioRef.current.muted = !ambienceOn;
-    if (ambienceOn) {
+    if (ambienceOn && started && !isComplete) {
       audioRef.current.play().catch(() => { });
     }
-  }, [ambienceOn]);
+  }, [ambienceOn, started, isComplete]);
 
   // Progress across all phases
   const progress = useMemo(() => {
@@ -329,7 +365,7 @@ export default function App() {
         position: "relative",
         overflow: "hidden",
         backgroundImage:
-          "linear-gradient(rgba(0,0,0,.40), rgba(0,0,0,.40)), url('https://plus.unsplash.com/premium_photo-1661954483883-edd65eac3577?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')",
+          `linear-gradient(rgba(0,0,0,.40), rgba(0,0,0,.40)), url('${BG_URL}')`,
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
@@ -388,12 +424,12 @@ export default function App() {
             <h1 className="title">
               <span style={{ fontWeight: 500 }}>Zen</span>Out
             </h1>
-            <p className="subtitle">A science-backed guided meditation to stimulate the vagus nerve and help you relax.</p>
+            <p className="subtitle">A science-backed meditation to stimulate the vagus nerve and help you relax</p>
 
             <div className="options">
+              <button className="option" onClick={() => startWithMinutes(3)}>3 Minutes</button>
               <button className="option" onClick={() => startWithMinutes(5)}>5 Minutes</button>
               <button className="option" onClick={() => startWithMinutes(10)}>10 Minutes</button>
-              <button className="option" onClick={() => startWithMinutes(15)}>15 Minutes</button>
             </div>
 
           </div>
@@ -466,12 +502,15 @@ export default function App() {
           </div>
 
           {/* progress */}
-          <div style={{ maxWidth: 960, width: "65%", margin: "0 auto" }}>
+          <div style={{ maxWidth: 960, width: "65%", margin: "2px auto 0 auto" }}>
             <div className="bar">
               <div className="barFill" style={{ width: `${progress}%` }} />
             </div>
 
-            <div>
+            
+          </div> 
+
+          <div>
               <div>
                 <div className="smallCaps">Phase {phaseIndex + 1} of {PHASES.length}</div>
                 <div className="phaseTitle">{current.name}</div>
@@ -479,7 +518,6 @@ export default function App() {
               </div>
               {/* <div className="timer">{timeStr}</div> */}
             </div>
-          </div> 
 
             
 
@@ -489,7 +527,7 @@ export default function App() {
               <div className="breathCircle" style={{ animation: `breath ${CYCLE_MS}ms infinite` }}>
               </div>
               <div className="circleGlow" />
-              <div className="phaseDesc"><BreathPrompt currentPhase={current} started={started} /></div>
+              <div className="breathText"><BreathPrompt currentPhase={current} started={started} /></div>
 
             </div>
           </div>
