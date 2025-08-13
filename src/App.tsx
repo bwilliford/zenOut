@@ -16,9 +16,10 @@ type Phase = { key: PhaseKey; name: string; description: string; illo?: "eyes" |
 const PHASES: Phase[] = [
   { key: "p1", name: "Resonant Breathing", description: "Inhale 4s · Exhale 8s. Follow the circle." },
   { key: "p2", name: "Oms (Humming Exhales)", description: "Now hum or 'om' during each exhale. Feel the vibration in your chest and neck." },
-  { key: "p3", name: "Gently Rub Eyes", description: "Close your eyes and gently massage them with your fingertips.", illo: "eyes" },
-  { key: "p4", name: "Rub Ears", description: "Gently rub and stretch the outer ears.", illo: "ears" },
-  { key: "p5", name: "Rub Neck", description: "Gently massage along the side of the neck below the ears.", illo: "neck" },
+  { key: "p3", name: "Ear Massage", description: "Gently rub and stretch your ears.", illo: "ears" },
+  { key: "p4", name: "Neck Massage", description: "Gently massage along the side of the neck below the ears.", illo: "neck" },
+  { key: "p5", name: "Eye Massage", description: "Close your eyes and gently massage them with your fingertips.", illo: "eyes" }
+  
 ];
 
 /* ---------- BreathPrompt Component ---------- */
@@ -178,6 +179,8 @@ export default function App() {
   }, [phaseIndex]);
 
 
+
+
   // Play chime when phase changes
   useEffect(() => {
     if (!started) return;
@@ -198,8 +201,7 @@ export default function App() {
 
   // OM sound effect for all phases after the first
   useEffect(() => {
-    if (!started || current.key === "p1") return;
-    if (isComplete) return;
+    if (!started || current.key === "p1" || isComplete) return;
 
     let cycleStartTime = Date.now();
     let omInterval: number;
@@ -268,12 +270,12 @@ export default function App() {
         omAudioRef.current.currentTime = 0;
       }
     };
-  }, [started, current.key]);
+  }, [started, current.key, isComplete]);
 
   // Start a session with chosen minutes → per-phase duration
-  const startWithMinutes = async (minutes: 3 | 5 | 10) => {
+  const startWithMinutes = async (minutes: 2 | 5 | 10) => {
     const perPhase =
-      minutes === 3 ? 12_000 :
+      minutes === 2 ? 24_000 :
         minutes === 5 ? 60_000 :
           120_000; // 10 min
 
@@ -358,6 +360,7 @@ export default function App() {
 
   return (
     <div
+      className="background-fade"
       style={{
         height: "100vh",
         width: "100vw",
@@ -365,7 +368,7 @@ export default function App() {
         position: "relative",
         overflow: "hidden",
         backgroundImage:
-          `linear-gradient(rgba(0,0,0,.40), rgba(0,0,0,.40)), url('${BG_URL}')`,
+          `linear-gradient(rgba(0,0,0,.30), rgba(0,0,0,.3)), url('${BG_URL}')`,
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
@@ -419,7 +422,7 @@ export default function App() {
 
       {/* Start screen with 3 options */}
       {!started && (
-        <div style={{ height: "100vh", display: "grid", placeItems: "center", textAlign: "center", padding: 24, overflow: "hidden" }}>
+        <div className="start-screen" style={{ height: "100vh", display: "grid", placeItems: "center", textAlign: "center", padding: 24, overflow: "hidden" }}>
           <div>
             <h1 className="title">
               <span style={{ fontWeight: 500 }}>Zen</span>Out
@@ -427,7 +430,7 @@ export default function App() {
             <p className="subtitle">A science-backed meditation to stimulate the vagus nerve and help you relax</p>
 
             <div className="options">
-              <button className="option" onClick={() => startWithMinutes(3)}>3 Minutes</button>
+              <button className="option" onClick={() => startWithMinutes(2)}>2 Minutes</button>
               <button className="option" onClick={() => startWithMinutes(5)}>5 Minutes</button>
               <button className="option" onClick={() => startWithMinutes(10)}>10 Minutes</button>
             </div>
@@ -456,7 +459,7 @@ export default function App() {
       {/* Session in progress */}
       {started && !isComplete && (
 
-        <div style={{ height: "100vh", display: "flex", flexDirection: "column", padding: "30px 16px 24px", gap: 24 }}>
+        <div className="session-screen" style={{ height: "100vh", display: "flex", flexDirection: "column", padding: "30px 16px 24px", gap: 24, overflow: "hidden" }}>
 
           {/* Top-right controls */}
           <div style={{ position: "absolute", bottom: 16, right: 16, zIndex: 2, display: "flex", gap: 8 }}>
@@ -532,8 +535,6 @@ export default function App() {
             </div>
           </div>
           
-
-
           {/* illustrations */}
           <div style={{ minHeight: 80, display: "grid", placeItems: "center" }}>
             {current.illo === "eyes" && <EyeRubSVG />}
@@ -548,7 +549,7 @@ export default function App() {
               const left = Math.random() * 100;
               const delay = Math.random() * 3;
               const duration = 1.8 + Math.random() * 1.8;
-              const size = 4 + Math.random() * 10;
+              const size = 8 + Math.random() * 10;
               const opacity = 0.3 + Math.random() * 0.5;
               return (
                 <div
@@ -572,7 +573,7 @@ export default function App() {
 
       {/* completion */}
       {isComplete && (
-        <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", textAlign: "center", padding: 24 }}>
+        <div className="completion-screen" style={{ height: "100vh", display: "grid", placeItems: "center", textAlign: "center", padding: 24, overflow: "hidden" }}>
           <div>
             <h2 className="title">How do you feel?</h2>
             <p className="subtitle" style={{ maxWidth: 640, margin: "12px auto 0" }}>

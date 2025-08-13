@@ -2,10 +2,42 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ZenOut - Guided Vagus Nerve Meditation</title>
+
+    <meta name="description" content="ZenOut is a simple, guided meditation app designed to calm your mind, stimulate your vagus nerve, and help you feel relaxed in just minutes. Perfect for short meditation breaks anytime, anywhere." />
+    <meta name="keywords" content="vagus nerve meditation, short meditation, simple meditation app, zen meditation app, guided meditation, quick relaxation, breathing exercises, mindfulness" />    
+    <meta name="author" content="Blake Williford, PhD" />
+    
+    <!-- Open Graph (for social sharing) -->
+    <meta property="og:title" content="ZenOut - Simple Vagus Nerve Meditation App" />
+    <meta property="og:description" content="Calm your mind and body in just minutes. ZenOut offers short, guided meditations to stimulate your vagus nerve and bring instant relaxation." />
+    <meta property="og:image" content="/src/assets/bg.png" />
+    <meta property="og:url" content="https://bwilliford.github.io/zenOut/" />
+    <meta property="og:type" content="website" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ZenOut - Simple Vagus Nerve Meditation App" />
+    <meta name="twitter:description" content="Short, guided meditations designed to activate your vagus nerve and promote deep relaxation." />
+    <meta name="twitter:image" content="/src/assets/bg.png" />
   </head>
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-REESP3QYNG"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-REESP3QYNG');
+  </script>
+  
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

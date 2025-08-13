@@ -158,8 +158,8 @@
 
 .rain-drop {
   position: absolute;
-  top: -24px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.1) 100%);
+  top: -60px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.4) 100%);
   border-radius: 50% 50% 60% 60% / 60% 60% 100% 100%;
   filter: blur(0.5px);
   animation-name: rain-fall;
@@ -173,7 +173,7 @@
     transform: translateY(0) scaleX(0.1);
   }
   100% {
-    transform: translateY(200vh) scaleX(0.2);
+    transform: translateY(300vh) scaleX(0.2);
   }
 }
 
@@ -221,5 +221,57 @@
     bottom: 48px;
   }
 
+}
+
+/* Screen fade-in animations */
+.start-screen,
+.session-screen,
+.completion-screen {
+  animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Delayed backdrop-filter elements */
+.option,
+.cta,
+.pill,
+.bar,
+.breathCircle {
+  animation: delayedFadeIn 1.2s ease-out 0.3s both;
+}
+
+@keyframes delayedFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Background image fade-in animation */
+.background-fade {
+  animation: backgroundFadeIn 1.2s ease-out;
+}
+
+@keyframes backgroundFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
