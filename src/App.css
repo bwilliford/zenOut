@@ -1,3 +1,19 @@
+html {
+  scrollbar-width: thin;
+  scrollbar-color: #ffffff #e0e0e0; /* Thumb track */
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: white transparent;
+}
+
+
 .title { 
   font-size: 72px;
   font-weight: 100; 
@@ -51,6 +67,123 @@
   backdrop-filter: blur(6px); 
   color: white; 
   cursor: pointer; 
+}
+
+.learn-container {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 20;
+}
+
+.learn-button {
+  position: relative;
+  /* Explicit initial size so we can transition to 100vw/100vh (auto doesn't interpolate) */
+  width: 80px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-sizing: border-box;
+  transition:
+    width 0.5s ease,
+    height 0.5s ease,
+    border-radius 0.5s ease,
+    top 0.5s ease,
+    left 0.5s ease;
+}
+
+.learn-text {
+  opacity: 1;
+  transition: opacity 0.35s ease;
+  margin-left: 170px;
+}
+
+.learn-container.expanded .learn-text {
+  opacity: 0;
+  pointer-events: none;
+  display: none;
+}
+
+.learn-close-x {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  font-size: 28px;
+  font-weight: 200;
+  line-height: 1;
+  color: white;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.learn-container.expanded .learn-close-x {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.learn-container.expanded .learn-button {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  backdrop-filter: blur(30px);
+  overflow-y: auto;
+  display: block;
+  padding: 72px 24px 24px;
+}
+
+.learn-content {
+  max-width: 720px;
+  margin: 0 auto;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+
+.learn-illustration {
+  display: block;
+  margin: 24px auto 0;
+  max-width: 260px;
+  width: 100%;
+  height: auto;
+}
+
+.learn-container.expanded .learn-content {
+  opacity: 1;
+  pointer-events: auto;
+  scrollbar-width: thin; 
+}
+
+.learn-content p {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: rgba(255,255,255,.8);
+  text-align: left;
+}
+
+.learn-spacer {
+  height: 60px;
+}
+
+.learn-card {
+  background-color: rgba(0,0,0,0);
+  padding: 0px;
+  border-radius: 12px;
+  margin-bottom: 60px;
 }
 
 .hint { 

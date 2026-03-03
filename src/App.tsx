@@ -9,6 +9,12 @@ const AMBIENCE_URL = new URL('./assets/birds.mp3', import.meta.url).toString();
 const OM_URL = new URL('./assets/om.mp3', import.meta.url).toString();
 const CHIME_URL = new URL('./assets/chime.mp3', import.meta.url).toString();
 const BG_URL = new URL('./assets/bg.jpg', import.meta.url).toString();
+const BREATHING_ILLUSTRATION_URL = new URL('./assets/illustration-breathing.png', import.meta.url).toString();
+const OMS_ILLUSTRATION_URL = new URL('./assets/illustration-oms.png', import.meta.url).toString();
+const EAR_MASSAGE_ILLUSTRATION_URL = new URL('./assets/illustration-ears.png', import.meta.url).toString();
+const NECK_MASSAGE_ILLUSTRATION_URL = new URL('./assets/illustration-neck.png', import.meta.url).toString();
+const EYE_MASSAGE_ILLUSTRATION_URL = new URL('./assets/illustration-eyes.png', import.meta.url).toString();
+
 
 type PhaseKey = "p1" | "p2" | "p3" | "p4" | "p5";
 type Phase = { key: PhaseKey; name: string; description: string; illo?: "eyes" | "ears" | "neck" };
@@ -130,6 +136,7 @@ export default function App() {
   const [phaseDurationMs, setPhaseDurationMs] = useState(60000); // default 60s per phase
   const [remaining, setRemaining] = useState(60000);
   const [ambienceOn, setAmbienceOn] = useState(true);
+  const [learnExpanded, setLearnExpanded] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const omAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -374,7 +381,7 @@ export default function App() {
       }}
     >
 
-<div style={{ position: "absolute", top: 16, right: 16, zIndex: 2, display: "flex", gap: 8 }}>
+          <div style={{ position: "absolute", top: 16, right: 16, zIndex: 2, display: "flex", gap: 8 }}>
             <button
               className="pill"
               onClick={() => {
@@ -422,7 +429,84 @@ export default function App() {
 
       {/* Start screen with 3 options */}
       {!started && (
-        <div className="start-screen" style={{ height: "100vh", display: "grid", placeItems: "center", textAlign: "center", padding: 24, overflow: "hidden" }}>
+        <div className={`start-screen ${learnExpanded ? "learn-expanded" : ""}`} style={{ height: "100vh", display: "grid", placeItems: "center", textAlign: "center", padding: 24, overflow: "hidden" }}>
+          <div className={`learn-container ${learnExpanded ? "expanded" : ""}`}>
+            <div
+              className="pill learn-button"
+              role="button"
+              tabIndex={0}
+              aria-label="Learn"
+              onClick={() => setLearnExpanded(true)}
+              onKeyDown={(e) => e.key === "Enter" && setLearnExpanded(true)}
+            >
+              <span className="learn-text">Learn</span>
+              <button
+                type="button"
+                className="learn-close-x"
+                aria-label="Close"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLearnExpanded(false);
+                }}
+              >
+                ×
+              </button>
+              <div className="learn-content" onClick={(e) => e.stopPropagation()}>
+                
+                  <h2>What is the Vagus Nerve?</h2>
+                  <p>
+                  The vagus nerve is the main nerve of the <i>parasympathetic</i> nervous system—the branch responsible for “rest and digest.” It runs from the brainstem down through the neck into the heart, lungs, and digestive organs, constantly relaying information between the body and brain. When vagal activity increases (often measured by heart rate variability), heart rate slows, breathing becomes more efficient, digestion improves, and stress hormones decrease.</p>
+                  <p>Stimulating the vagus nerve essentially shifts the body out of a defensive, sympathetic state (“fight or flight”) into a calm, regulated state associated with safety, recovery, and emotional balance.</p>
+                <div className="learn-spacer" />
+                
+                <h2>Proven Techniques to Stimulate the Vagus Nerve</h2>
+
+                <div className="learn-card">                
+                  <img className="learn-illustration" src={BREATHING_ILLUSTRATION_URL} alt="Deep breathing" />
+                  <h3>Deep breathing</h3>
+                  <p>Slow diaphragmatic breathing—especially at ~5-6 breaths per minute—stimulates vagal afferents via lung stretch receptors and increases heart rate variability (HRV), a marker of parasympathetic (vagal) tone. This shifts the autonomic balance away from sympathetic “fight-or-flight” toward “rest-and-digest,” lowering heart rate and perceived stress. Clinical studies show paced breathing improves vagal tone and emotional regulation (e.g., Lehrer et al., 2020; Brown & Gerbarg, 2005).</p>
+
+                  <p>ZenOut primarily utilizes extended-exhale breathing (4 seconds in, 8 seconds out, for a total of 5 breaths per minute) which can be powerful for stimulating the vagus nerve and having a sedative effect. The vagus nerve exerts stronger influence on the heart during exhalation, so deliberately slowing and especially lengthening the exhale increases vagal tone, lowers heart rate, and shifts the autonomic balance toward parasympathetic dominance.</p>
+                </div>
+
+                <div className="learn-card">
+                  <img className="learn-illustration" src={OMS_ILLUSTRATION_URL} alt="Oms / Humming" />
+                  <h3>Humming / “Om” chanting</h3>
+                  <p>Humming and vocal toning activate the vagus nerve through vibration of the vocal cords and stimulation of the auricular and laryngeal branches. Chanting “Om” has been shown in fMRI studies to reduce activity in limbic structures associated with stress, suggesting parasympathetic engagement (Kalyani et al., 2011). The prolonged exhale during humming further enhances vagal activation via respiratory sinus arrhythmia.</p>
+                </div>
+
+                <div className="learn-card">
+                  <img className="learn-illustration" src={EAR_MASSAGE_ILLUSTRATION_URL} alt="Rubbing ears" />
+                  <h3>Rubbing ears</h3>
+                  <p>The outer ear contains branches of the auricular vagus nerve (Arnold’s nerve). Gentle stimulation of this area can activate vagal pathways; this is the same anatomical basis used in transcutaneous auricular vagus nerve stimulation (taVNS), which has documented calming and anti-inflammatory effects (Badran et al., 2018). Light ear massage may therefore modestly increase parasympathetic tone.</p>
+                </div>
+
+                <div className="learn-card">
+                  <img className="learn-illustration" src={NECK_MASSAGE_ILLUSTRATION_URL} alt="Rubbing the sides of the neck" />
+                  <h3>Rubbing the sides of the neck</h3>
+                  <p>The vagus nerve runs within the carotid sheath along the sides of the neck. Gentle massage in this area may indirectly influence parasympathetic activity by stimulating baroreceptors in the carotid sinus, which help regulate blood pressure and heart rate. Activation of this reflex arc increases vagal output and can slow heart rate, promoting relaxation. </p>
+                  <p><b>Note:</b> Pressure should always be gentle to avoid dizziness.</p>
+                </div>
+                
+                <div className="learn-card">
+                  <img className="learn-illustration" src={EYE_MASSAGE_ILLUSTRATION_URL} alt="Gently massaging the eyes" />
+                  <h3>Gently massaging the eyes</h3>
+                  <p>Light pressure over closed eyelids can trigger the oculocardiac reflex, mediated by the trigeminal nerve and vagus nerve. This reflex can slow heart rate and increase parasympathetic tone. While typically discussed in surgical contexts, mild, gentle stimulation may produce subtle calming effects through this same vagal pathway.</p>
+                </div>
+
+                <div className="learn-card">
+                  <h3>Nature sounds (e.g., birdsong)</h3>
+                  <p>Listening to natural soundscapes has been shown to reduce sympathetic arousal and enhance parasympathetic activity. Studies measuring HRV and cortisol suggest that exposure to nature sounds increases vagal tone and decreases stress markers (e.g., Annerstedt et al., 2013; Alvarsson et al., 2010). Auditory processing linked with safety cues may signal the nervous system that the environment is non-threatening, facilitating vagal dominance.</p>
+                </div>
+
+                <div className="learn-card">
+                  <h3>Combining/Stacking Techniques</h3>
+                  <p>Stacking vagal practices—such as slow diaphragmatic breathing, extended exhales, humming, gentle auricular (ear) stimulation, and calming auditory input like nature sounds—may amplify parasympathetic activation because they engage overlapping but distinct vagal pathways simultaneously (respiratory, laryngeal, auricular, and cardioinhibitory branches).</p> <p>Because these inputs converge on brainstem nuclei like the nucleus tractus solitarius, combining them may produce additive or synergistic effects—reinforcing safety signaling, increasing vagal tone, and accelerating the transition from sympathetic arousal to a regulated, calm state.</p>
+                </div>
+          </div>
+        </div>
+        </div>
+
           <div>
             <h1 className="title">
               <span style={{ fontWeight: 500 }}>Zen</span>Out
@@ -434,25 +518,24 @@ export default function App() {
               <button className="option" onClick={() => startWithMinutes(5)}>5 Minutes</button>
               <button className="option" onClick={() => startWithMinutes(10)}>10 Minutes</button>
             </div>
-
           </div>
 
-        <div className="created">
-          Created with
-          <span style={{ fontFamily: "monospace", margin: "0 4px" }} aria-label="heart" role="img">&#9829;</span>by <a href="https://www.blakewilliford.com" target="_blank" style={{ fontWeight: "bold", color: "white", pointerEvents: "auto" }}>Blake Williford</a>
-        </div>
+          <div className="created">
+            Created with
+            <span style={{ fontFamily: "monospace", margin: "0 4px" }} aria-label="heart" role="img">&#9829;</span>by <a href="https://www.blakewilliford.com" target="_blank" style={{ fontWeight: "bold", color: "white", pointerEvents: "auto" }}>Blake Williford</a>
+          </div>
 
-        <div className="coffee">
-          Enjoying? Buy me a{" "}
-          <a
-            href="https://ko-fi.com/blakewilliford"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ fontWeight: "bold", color: "white" }}
-          >
-            coffee
-          </a>
-        </div>
+          <div className="coffee">
+            Enjoying? Buy me a{" "}
+            <a
+              href="https://ko-fi.com/blakewilliford"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ fontWeight: "bold", color: "white" }}
+            >
+              coffee
+            </a>
+          </div>
         </div>
       )}
 
