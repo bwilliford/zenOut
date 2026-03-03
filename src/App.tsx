@@ -20,7 +20,7 @@ type PhaseKey = "p1" | "p2" | "p3" | "p4" | "p5";
 type Phase = { key: PhaseKey; name: string; description: string; illo?: "eyes" | "ears" | "neck" };
 
 const PHASES: Phase[] = [
-  { key: "p1", name: "Resonant Breathing", description: "Inhale 4s · Exhale 8s. Follow the circle." },
+  { key: "p1", name: "Deep Breathing", description: "Inhale 4s · Exhale 8s. Follow the circle." },
   { key: "p2", name: "Oms (Humming Exhales)", description: "Now hum or 'om' during each exhale. Feel the vibration in your chest and neck." },
   { key: "p3", name: "Ear Massage", description: "Gently rub and stretch your ears.", illo: "ears" },
   { key: "p4", name: "Neck Massage", description: "Gently massage along the side of the neck below the ears.", illo: "neck" },
