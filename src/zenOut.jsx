@@ -211,7 +211,7 @@ export default function App() {
 
         .breathCircle {
           width: 220px; height: 220px; border-radius: 9999px;
-          background: rgba(255,255,255,.20); backdrop-filter: blur(6px);
+          background: rgba(255,255,255,.20); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
           will-change: transform;
         }
         .circleGlow { position:absolute; inset:-24px; border-radius:9999px; background: rgba(255,255,255,.10); filter: blur(20px); }

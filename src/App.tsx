@@ -14,7 +14,16 @@ const OMS_ILLUSTRATION_URL = new URL('./assets/illustration-oms.png', import.met
 const EAR_MASSAGE_ILLUSTRATION_URL = new URL('./assets/illustration-ears.png', import.meta.url).toString();
 const NECK_MASSAGE_ILLUSTRATION_URL = new URL('./assets/illustration-neck.png', import.meta.url).toString();
 const EYE_MASSAGE_ILLUSTRATION_URL = new URL('./assets/illustration-eyes.png', import.meta.url).toString();
+const VAGUS_ILLUSTRATION_URL = new URL('./assets/illustration-vagus.png', import.meta.url).toString();
+const BIRDS_ILLUSTRATION_URL = new URL('./assets/illustration-birds.png', import.meta.url).toString();
 
+const PHASE_ILLUSTRATION_URLS = [
+  BREATHING_ILLUSTRATION_URL,
+  OMS_ILLUSTRATION_URL,
+  EAR_MASSAGE_ILLUSTRATION_URL,
+  NECK_MASSAGE_ILLUSTRATION_URL,
+  EYE_MASSAGE_ILLUSTRATION_URL,
+];
 
 type PhaseKey = "p1" | "p2" | "p3" | "p4" | "p5";
 type Phase = { key: PhaseKey; name: string; description: string; illo?: "eyes" | "ears" | "neck" };
@@ -146,7 +155,7 @@ export default function App() {
   const current = PHASES[phaseIndex];
   const isComplete = started && phaseIndex === PHASES.length - 1 && remaining === 0;
 
-  // Stop all audio when session completes
+  // When session completes: stop ambience/OM and play chime as completion screen fades in
   useEffect(() => {
     if (isComplete) {
       // Stop ambience audio
@@ -159,11 +168,13 @@ export default function App() {
         omAudioRef.current.pause();
         omAudioRef.current.currentTime = 0;
       }
-      // Stop chime audio
-      if (chimeAudioRef.current) {
-        chimeAudioRef.current.pause();
-        chimeAudioRef.current.currentTime = 0;
+      // Play chime once when meditation ends (completion screen fades in)
+      if (!chimeAudioRef.current) {
+        chimeAudioRef.current = new Audio(CHIME_URL);
+        chimeAudioRef.current.volume = 0.1;
       }
+      chimeAudioRef.current.currentTime = 0;
+      chimeAudioRef.current.play().catch(() => {});
     }
   }, [isComplete]);
 
@@ -453,6 +464,7 @@ export default function App() {
               </button>
               <div className="learn-content" onClick={(e) => e.stopPropagation()}>
                 
+                <img className="learn-illustration" src={VAGUS_ILLUSTRATION_URL} alt="The Vagus Nerve" />
                   <h2>What is the Vagus Nerve?</h2>
                   <p>
                   The vagus nerve is the main nerve of the <i>parasympathetic</i> nervous system—the branch responsible for “rest and digest.” It runs from the brainstem down through the neck into the heart, lungs, and digestive organs, constantly relaying information between the body and brain. When vagal activity increases (often measured by heart rate variability), heart rate slows, breathing becomes more efficient, digestion improves, and stress hormones decrease.</p>
@@ -495,6 +507,7 @@ export default function App() {
                 </div>
 
                 <div className="learn-card">
+                  <img className="learn-illustration" src={BIRDS_ILLUSTRATION_URL} alt="Nature sounds (e.g., birdsong)" />
                   <h3>Nature sounds (e.g., birdsong)</h3>
                   <p>Listening to natural soundscapes has been shown to reduce sympathetic arousal and enhance parasympathetic activity. Studies measuring HRV and cortisol suggest that exposure to nature sounds increases vagal tone and decreases stress markers (e.g., Annerstedt et al., 2013; Alvarsson et al., 2010). Auditory processing linked with safety cues may signal the nervous system that the environment is non-threatening, facilitating vagal dominance.</p>
                 </div>
@@ -598,6 +611,12 @@ export default function App() {
 
           <div>
               <div>
+                <img
+                  className="phase-illustration"
+                  src={PHASE_ILLUSTRATION_URLS[phaseIndex]}
+                  alt=""
+                  aria-hidden
+                />
                 <div className="smallCaps">Phase {phaseIndex + 1} of {PHASES.length}</div>
                 <div className="phaseTitle">{current.name}</div>
                 <div className="phaseDesc">{current.description}</div>
@@ -608,7 +627,7 @@ export default function App() {
             
 
           {/* breathing circle */}
-          <div style={{ flex: 1, display: "grid", placeItems: "center" }}>
+          <div style={{ marginTop: "40px", display: "grid", placeItems: "center" }}>
             <div style={{ position: "relative" }}>
               <div className="breathCircle" style={{ animation: `breath ${CYCLE_MS}ms infinite` }}>
               </div>
