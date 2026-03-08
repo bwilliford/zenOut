@@ -87,7 +87,6 @@ html {
   /* Explicit initial size so we can transition to 100vw/100vh (auto doesn't interpolate) */
   width: 80px;
   height: 38px;
-  display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
@@ -103,7 +102,7 @@ html {
 .learn-text {
   opacity: 1;
   transition: opacity 0.35s ease;
-  margin-left: 182px;
+  font-weight: 600;
 }
 
 .learn-container.expanded .learn-text {
@@ -120,7 +119,7 @@ html {
   height: 40px;
   padding: 0;
   font-size: 28px;
-  font-weight: 200;
+  font-weight: 300;
   line-height: 1;
   color: white;
   background: transparent;
