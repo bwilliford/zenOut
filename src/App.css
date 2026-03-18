@@ -77,8 +77,8 @@ html {
 
 .learn-container {
   position: absolute;
-  top: 16px;
-  left: 16px;
+  top: 24px;
+  left: 24px;
   z-index: 20;
 }
 
@@ -113,8 +113,8 @@ html {
 
 .learn-close-x {
   position: fixed;
-  top: 16px;
-  left: 16px;
+  top: 24px;
+  left: 24px;
   width: 40px;
   height: 40px;
   padding: 0;
@@ -328,7 +328,7 @@ html {
 
 .coffee {
   position: fixed;
-  bottom: 16px;
+  bottom: 32px;
   right: 16px;
   z-index: 10;
   color: white;
@@ -342,7 +342,7 @@ html {
 
 .created {
   position: fixed;
-  bottom: 16px;
+  bottom: 48px;
   left: 16px;
   z-index: 10;
   color: white;
@@ -367,7 +367,7 @@ html {
   }
 
   .created {
-    bottom: 48px;
+    bottom: 64px;
   }
 
 }

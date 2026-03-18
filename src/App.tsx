@@ -392,7 +392,7 @@ export default function App() {
       }}
     >
 
-          <div style={{ position: "absolute", top: 16, right: 16, zIndex: 2, display: "flex", gap: 8 }}>
+          <div style={{ position: "absolute", top: 24, right: 24, zIndex: 2, display: "flex", gap: 8 }}>
             <button
               className="pill"
               onClick={() => {
@@ -558,7 +558,7 @@ export default function App() {
         <div className="session-screen" style={{ height: "100vh", display: "flex", flexDirection: "column", padding: "30px 16px 24px", gap: 24, overflow: "hidden" }}>
 
           {/* Top-right controls */}
-          <div style={{ position: "absolute", bottom: 16, right: 16, zIndex: 2, display: "flex", gap: 8 }}>
+          <div style={{ position: "absolute", bottom: 24, right: 24, zIndex: 2, display: "flex", gap: 8 }}>
             <button className="pill" onClick={() => setAmbienceOn(v => !v)} style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ display: "flex", alignItems: "center" }}>
                 {ambienceOn ? (
@@ -581,7 +581,7 @@ export default function App() {
             </button>
           </div>
 
-          <div style={{ position: "absolute", top: 16, left: 16, zIndex: 2 }}>
+          <div style={{ position: "absolute", top: 24, left: 24, zIndex: 2 }}>
             <button
               className="pill"
               onClick={() => {
@@ -601,7 +601,7 @@ export default function App() {
           </div>
 
           {/* progress */}
-          <div style={{ maxWidth: 960, width: "65%", margin: "2px auto 0 auto" }}>
+          <div style={{ maxWidth: 960, width: "60%", margin: "9px auto 0 auto" }}>
             <div className="bar">
               <div className="barFill" style={{ width: `${progress}%` }} />
             </div>
